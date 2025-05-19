@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../../data/postgres";
 import { CreateTodoDto, UpdateTodoDto } from "../../domain/dtos";
+import { TodoReopository } from "../../domain";
 
 // //Se crea un array de objetos, para utilizarlo en la base de datos:
 // const todos = [
@@ -12,14 +13,22 @@ import { CreateTodoDto, UpdateTodoDto } from "../../domain/dtos";
 export class TodosController {
 
     // independency inyection:
-    constructor() { }
+    constructor(
+        private readonly todoRepository: TodoReopository,
+    ) { }
 
     public getTodos = async (req:Request, res:Response) => {
 
-        const getTodo = await prisma.todo.findMany();
-        // console.log(getTodo);
+        //Version anterior sin arquitectura limpia:
+        // const getTodo = await prisma.todo.findMany();
+        // // console.log(getTodo);
 
-        res.json(getTodo);
+        // res.json(getTodo);
+
+        //*Con la arquitectura limpia:
+        const todos = await this.todoRepository.getAll();
+        // console.log({todos});
+        res.json(todos);
     }
 
     public getTodoById = async (req:Request, res:Response) => {
@@ -37,19 +46,27 @@ export class TodosController {
         // const todo = todos.find(todo => todo.id === id);
 
         //*Esta forma es utilizando el prisma:
-        const todo = await prisma.todo.findFirst({
-            where: {
-                id: id
-            }
-        });
+        // const todo = await prisma.todo.findFirst({
+        //     where: {
+        //         id: id
+        //     }
+        // });
         
         //Se comenta para poder hacer la validación del 404, llegado al caso de que no se encuentre el id:
         // res.json(todo);
 
         //Se utiliza el ternario para poder validar el 404:
-        (todo) 
-            ? res.json(todo) 
-            : res.status(404).json({error: `TODO with id ${id} not found`});
+        // (todo) 
+        //     ? res.json(todo) 
+        //     : res.status(404).json({error: `TODO with id ${id} not found`});
+
+        //*Esta forma utilizando la arquitectura limpia:
+        try {
+            const todo = await this.todoRepository.findById(id);
+            res.json(todo);
+        } catch (error) {
+            res.status(400).json({error});
+        }
 
     }
 
@@ -80,10 +97,14 @@ export class TodosController {
         if(error) res.status(400).json({error});
 
         //Se utiliza prisma con el DTO para poder crear un nuevo todo:
-        const todo = await prisma.todo.create({
-            data: createTodoDto!
-        });
+        // const todo = await prisma.todo.create({
+        //     data: createTodoDto!
+        // });
 
+        // res.json(todo);
+
+        //*con la arquitectura limpia:
+        const todo = await this.todoRepository.create(createTodoDto!);
         res.json(todo);
 
     };
@@ -106,12 +127,12 @@ export class TodosController {
         // if(!todo) res.status(404).json({error: `Todo with id ${id} not found`});
 
         //*Esta forma es utilizando el prisma:
-        const todo = prisma.todo.findFirst({
-            where: {
-                id: id
-            }
-        });
-        if(!todo) res.status(404).json({error: `Todo with id ${id} not found`});
+        // const todo = prisma.todo.findFirst({
+        //     where: {
+        //         id: id
+        //     }
+        // });
+        // if(!todo) res.status(404).json({error: `Todo with id ${id} not found`});
         
         //Ya no es necesario ya que esta información ya se encuentra en el DTO:
         // const {text, completedAt} = req.body;
@@ -133,22 +154,27 @@ export class TodosController {
         // });
 
         //*Esta es la version de actualizar el todo utilizando el prisma:
-        const updatedTodo = await prisma.todo.update({
-            where: {
-                id: id
-            },
+        // const updatedTodo = await prisma.todo.update({
+        //     where: {
+        //         id: id
+        //     },
             
-            //Estos es para poder actualizar el todo:
-            // data: {
-            //     text: text,
-            //     completedAt: (completedAt) ? new Date(completedAt) : null
-            // }
+        //     //Estos es para poder actualizar el todo:
+        //     // data: {
+        //     //     text: text,
+        //     //     completedAt: (completedAt) ? new Date(completedAt) : null
+        //     // }
 
-            //Esto es para actualizar el todo con el DTO:
-            data: updateTodoDto!.values
-        });
+        //     //Esto es para actualizar el todo con el DTO:
+        //     data: updateTodoDto!.values
+        // });
 
+        // res.json(updatedTodo);
+
+        //*Con la arquitectura limpia:
+        const updatedTodo = await this.todoRepository.updateById(updateTodoDto!);
         res.json(updatedTodo);
+
     };
 
     public deleteTodo = async (req:Request, res:Response) => {
@@ -159,26 +185,30 @@ export class TodosController {
         // const todo = todos.find(todo => todo.id === id);
         // if(!todo) res.status(404).json({error: `Todo with id ${id} not found`});
 
-        const todo = prisma.todo.findFirst({
-            where: {
-                id: id
-            }
-        });
-        if(!todo) res.status(404).json({error: `Todo with id ${id} not found`});
+        // const todo = prisma.todo.findFirst({
+        //     where: {
+        //         id: id
+        //     }
+        // });
+        // if(!todo) res.status(404).json({error: `Todo with id ${id} not found`});
 
         //Este es el metodo para poder borrar el todo:
         // todos.splice(todos.indexOf(todo!), 1);
 
         //*Esta es la forma de borrar el todo con prisma:
-        const deleted = await prisma.todo.delete({
-            where: {
-                id: id
-            }
-        });
+        // const deleted = await prisma.todo.delete({
+        //     where: {
+        //         id: id
+        //     }
+        // });
 
-        (deleted) 
-            ? res.json(deleted) 
-            : res.status(404).json({error: `TODO with id ${id} not found`});
+        // (deleted) 
+        //     ? res.json(deleted) 
+        //     : res.status(404).json({error: `TODO with id ${id} not found`});
+
+        //*Con la arquitectura limpia:
+        const deletedTodo = await this.todoRepository.deleteById(id);
+        res.json(deletedTodo);
 
     }
 
