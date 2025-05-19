@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../../data/postgres";
+import { CreateTodoDto, UpdateTodoDto } from "../../domain/dtos";
 
 // //Se crea un array de objetos, para utilizarlo en la base de datos:
 // const todos = [
@@ -16,7 +17,7 @@ export class TodosController {
     public getTodos = async (req:Request, res:Response) => {
 
         const getTodo = await prisma.todo.findMany();
-        console.log(getTodo);
+        // console.log(getTodo);
 
         res.json(getTodo);
     }
@@ -54,15 +55,15 @@ export class TodosController {
 
     public createTodo = async (req:Request, res:Response) => {
         //Se desestructura el body:
-        const {text} = req.body;
-        if(!text)  res.status(400).json({error: 'Text property is required'});
+        // const {text} = req.body;
+        // if(!text)  res.status(400).json({error: 'Text property is required'});
 
         //Este es el metodo para poder crear un nuevo todo con prisma:
-        const todo = await prisma.todo.create({
-            data: {
-                text: text
-            }
-        });
+        // const todo = await prisma.todo.create({
+        //     data: {
+        //         text: text
+        //     }
+        // });
 
         // //Se utiliza para poder crear un nuevo todo:
         // const newTodo = {
@@ -74,6 +75,15 @@ export class TodosController {
         //Ya no se utiliza para poder crear un nuevo todo:
         // todos.push(newTodo);
 
+        //Se utiliza el DTO para poder traer la información de el body:
+        const [error, createTodoDto] = CreateTodoDto.create(req.body);
+        if(error) res.status(400).json({error});
+
+        //Se utiliza prisma con el DTO para poder crear un nuevo todo:
+        const todo = await prisma.todo.create({
+            data: createTodoDto!
+        });
+
         res.json(todo);
 
     };
@@ -82,7 +92,14 @@ export class TodosController {
     public updateTodo = async (req:Request, res:Response) => {
 
         const id = +req.params.id;
-        if(isNaN(id)) res.status(400).json({error: 'ID argument is not a number'});
+        
+        // Es para poder validar si el id es un number:
+        // Ya no es necesario por que se utiliza el DTO:
+        // if(isNaN(id)) res.status(400).json({error: 'ID argument is not a number'});
+
+        //*Utilizando el DTO:
+        const [error, updateTodoDto] = UpdateTodoDto.create({...req.body, id});
+        if(error) res.status(400).json({error});
         
         // // Se utiliza para poder devolver el id cuando se solocite:
         // const todo = todos.find(todo => todo.id === id);
@@ -96,7 +113,8 @@ export class TodosController {
         });
         if(!todo) res.status(404).json({error: `Todo with id ${id} not found`});
         
-        const {text, completedAt} = req.body;
+        //Ya no es necesario ya que esta información ya se encuentra en el DTO:
+        // const {text, completedAt} = req.body;
         // if(!text) res.status(400).json({error: 'Text property is required'});
 
         // Esta es la version anterior para poder actualizar el todo:
@@ -119,10 +137,15 @@ export class TodosController {
             where: {
                 id: id
             },
-            data: {
-                text: text,
-                completedAt: (completedAt) ? new Date(completedAt) : null
-            }
+            
+            //Estos es para poder actualizar el todo:
+            // data: {
+            //     text: text,
+            //     completedAt: (completedAt) ? new Date(completedAt) : null
+            // }
+
+            //Esto es para actualizar el todo con el DTO:
+            data: updateTodoDto!.values
         });
 
         res.json(updatedTodo);
