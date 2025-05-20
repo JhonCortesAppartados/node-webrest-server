@@ -1,4 +1,5 @@
 import express, { Router } from 'express';
+import compression from 'compression';
 import path from 'path';
 
 interface Options {
@@ -10,7 +11,8 @@ interface Options {
 
 export class Server {
 
-    private app = express();
+    public readonly app = express();
+    private serverListener?: any;
     private readonly port: number;
     private readonly publicPath: string;
     private readonly routes: Router;
@@ -29,6 +31,7 @@ export class Server {
         this.app.use(express.json());
         //Este es para poder recibir el body y poder enviarlo en formato urlencoded
         this.app.use(express.urlencoded({extended: true}));
+        this.app.use(compression());
 
         //*Public Folder
         this.app.use(express.static(this.publicPath));
@@ -47,9 +50,16 @@ export class Server {
         });
 
 
-
-        this.app.listen(this.port, () => {
+        //*Se agrego esta propiedad para poder cerrar el servidor:
+        //El serverListener se utiliza para poder cerrar el servidor.
+        this.serverListener = this.app.listen(this.port, () => {
             console.log(`Server running on port ${this.port}`);
         });
+    }
+
+
+    //*El metodo para cerrar el servidor:
+    public close(){
+        this.serverListener.close();
     }
 }

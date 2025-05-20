@@ -107,7 +107,7 @@ export class TodosController {
 
         //Se utiliza el DTO para poder traer la información de el body:
         const [error, createTodoDto] = CreateTodoDto.create(req.body);
-        if(error) res.status(400).json({error});
+        if(error)  res.status(400).json({error});
 
         //Se utiliza prisma con el DTO para poder crear un nuevo todo:
         // const todo = await prisma.todo.create({
@@ -123,8 +123,9 @@ export class TodosController {
         //*Esta es la forma utilizando los casos de uso:
         new CreateTodo(this.todoRepository)
             .execute(createTodoDto!)
-            .then(todo => res.json(todo))
-            .catch(error => res.status(400).json({error}))
+            .then(todo => {return res.status(201).json(todo);})
+            .catch(error => {return res.status(400).json({error})});
+
 
     };
 
@@ -197,8 +198,8 @@ export class TodosController {
         //*Esta es la forma de utilizar los casos de uso:
         new UpdateTodo(this.todoRepository)
             .execute(updateTodoDto!)
-            .then(todo => res.json(todo))
-            .catch(error => res.status(400).json({error}))
+            .then(todo => {return res.json(todo)})
+            .catch(error => {return res.status(400).json({error})})
 
 
     };
