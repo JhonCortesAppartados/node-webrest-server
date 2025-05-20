@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../../data/postgres";
 import { CreateTodoDto, UpdateTodoDto } from "../../domain/dtos";
-import { TodoReopository } from "../../domain";
+import { CreateTodo, DeleteTodo, GetTodo, GetTodos, TodoReopository, UpdateTodo } from "../../domain";
 
 // //Se crea un array de objetos, para utilizarlo en la base de datos:
 // const todos = [
@@ -26,9 +26,15 @@ export class TodosController {
         // res.json(getTodo);
 
         //*Con la arquitectura limpia:
-        const todos = await this.todoRepository.getAll();
-        // console.log({todos});
-        res.json(todos);
+        // const todos = await this.todoRepository.getAll();
+        // // console.log({todos});
+        // res.json(todos);
+
+        //*Se utilizaran los casos de uso:
+        new GetTodos(this.todoRepository)
+            .execute()
+            .then(todo => res.json(todo))
+            .catch(error => res.status(400).json({error}))
     }
 
     public getTodoById = async (req:Request, res:Response) => {
@@ -61,12 +67,19 @@ export class TodosController {
         //     : res.status(404).json({error: `TODO with id ${id} not found`});
 
         //*Esta forma utilizando la arquitectura limpia:
-        try {
-            const todo = await this.todoRepository.findById(id);
-            res.json(todo);
-        } catch (error) {
-            res.status(400).json({error});
-        }
+        // try {
+        //     const todo = await this.todoRepository.findById(id);
+        //     res.json(todo);
+        // } catch (error) {
+        //     res.status(400).json({error});
+        // }
+
+        //*Esta es la forma utilizando los casos de uso:
+        new GetTodo(this.todoRepository)
+            .execute(id)
+            .then(todo => res.json(todo))
+            .catch(error => res.status(400).json({error}))
+
 
     }
 
@@ -104,8 +117,14 @@ export class TodosController {
         // res.json(todo);
 
         //*con la arquitectura limpia:
-        const todo = await this.todoRepository.create(createTodoDto!);
-        res.json(todo);
+        // const todo = await this.todoRepository.create(createTodoDto!);
+        // res.json(todo);
+
+        //*Esta es la forma utilizando los casos de uso:
+        new CreateTodo(this.todoRepository)
+            .execute(createTodoDto!)
+            .then(todo => res.json(todo))
+            .catch(error => res.status(400).json({error}))
 
     };
 
@@ -172,8 +191,15 @@ export class TodosController {
         // res.json(updatedTodo);
 
         //*Con la arquitectura limpia:
-        const updatedTodo = await this.todoRepository.updateById(updateTodoDto!);
-        res.json(updatedTodo);
+        // const updatedTodo = await this.todoRepository.updateById(updateTodoDto!);
+        // res.json(updatedTodo);
+
+        //*Esta es la forma de utilizar los casos de uso:
+        new UpdateTodo(this.todoRepository)
+            .execute(updateTodoDto!)
+            .then(todo => res.json(todo))
+            .catch(error => res.status(400).json({error}))
+
 
     };
 
@@ -207,9 +233,14 @@ export class TodosController {
         //     : res.status(404).json({error: `TODO with id ${id} not found`});
 
         //*Con la arquitectura limpia:
-        const deletedTodo = await this.todoRepository.deleteById(id);
-        res.json(deletedTodo);
+        // const deletedTodo = await this.todoRepository.deleteById(id);
+        // res.json(deletedTodo);
 
+        //*Esta es la forma al utilizar los casos de usos:
+        new DeleteTodo(this.todoRepository)
+            .execute(id)
+            .then(todo => res.json(todo))
+            .catch(error => res.status(400).json({error}))
     }
 
 
