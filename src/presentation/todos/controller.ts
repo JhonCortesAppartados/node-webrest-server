@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../../data/postgres";
 import { CreateTodoDto, UpdateTodoDto } from "../../domain/dtos";
-import { CreateTodo, DeleteTodo, GetTodo, GetTodos, TodoReopository, UpdateTodo } from "../../domain";
+import { CreateTodo, CustomError, DeleteTodo, GetTodo, GetTodos, TodoReopository, UpdateTodo } from "../../domain";
 
 // //Se crea un array de objetos, para utilizarlo en la base de datos:
 // const todos = [
@@ -15,7 +15,15 @@ export class TodosController {
     // independency inyection:
     constructor(
         private readonly todoRepository: TodoReopository,
-    ) { }
+    ) {}
+
+    private handleError = (res: Response, error: any) => {
+        if(error instanceof CustomError) {
+            res.status(error.statusCode).json({error: error.message});
+            return;
+        }
+        return res.status(500).json({error: 'Internal server error - check logs'});
+    }
 
     public getTodos = async (req:Request, res:Response) => {
 
@@ -34,7 +42,9 @@ export class TodosController {
         new GetTodos(this.todoRepository)
             .execute()
             .then(todo => res.json(todo))
-            .catch(error => res.status(400).json({error}))
+            //se cambio por el handleError:
+            //.catch(error => res.status(400).json({error}))
+            .catch(error => this.handleError(res, error));
     }
 
     public getTodoById = async (req:Request, res:Response) => {
@@ -42,7 +52,7 @@ export class TodosController {
         const id = +req.params.id;
 
         //Para poder validar si el argumento que se envia es un number:
-        if(isNaN(id)) res.json({error: 'ID argument is not a number'});
+        // if(isNaN(id)) res.json({error: 'ID argument is not a number'});
 
         //Se utliza para poder devolver el id cuando se solocite:
         // console.log(id, 10);
@@ -78,10 +88,12 @@ export class TodosController {
         new GetTodo(this.todoRepository)
             .execute(id)
             .then(todo => res.json(todo))
-            .catch(error => res.status(400).json({error}))
+            //se cambio por el handleError:
+            // .catch((error: CustomError) => res.status(error.statusCode).json({error: error.message}));
+            .catch(error => this.handleError(res, error));
 
 
-    }
+    };
 
     public createTodo = async (req:Request, res:Response) => {
         //Se desestructura el body:
@@ -107,7 +119,7 @@ export class TodosController {
 
         //Se utiliza el DTO para poder traer la información de el body:
         const [error, createTodoDto] = CreateTodoDto.create(req.body);
-        if(error)  res.status(400).json({error});
+        if(error) res.status(400).json({error});
 
         //Se utiliza prisma con el DTO para poder crear un nuevo todo:
         // const todo = await prisma.todo.create({
@@ -124,7 +136,9 @@ export class TodosController {
         new CreateTodo(this.todoRepository)
             .execute(createTodoDto!)
             .then(todo => {return res.status(201).json(todo);})
-            .catch(error => {return res.status(400).json({error})});
+            //se cambio por el handleError:
+            // .catch(error => {return res.status(400).json({error})});
+            .catch(error => this.handleError(res, error));
 
 
     };
@@ -199,7 +213,9 @@ export class TodosController {
         new UpdateTodo(this.todoRepository)
             .execute(updateTodoDto!)
             .then(todo => {return res.json(todo)})
-            .catch(error => {return res.status(400).json({error})})
+            //se cambio por el handleError:
+            // .catch(error => {return res.status(400).json({error})});
+            .catch(error => this.handleError(res, error));
 
 
     };
@@ -207,7 +223,7 @@ export class TodosController {
     public deleteTodo = async (req:Request, res:Response) => {
         
         const id = +req.params.id;
-        if(isNaN(id)) res.status(400).json({error: 'ID argument is not a number'});
+        if(isNaN(id))  res.status(400).json({error: 'ID argument is not a number'});
         
         // const todo = todos.find(todo => todo.id === id);
         // if(!todo) res.status(404).json({error: `Todo with id ${id} not found`});
@@ -240,8 +256,10 @@ export class TodosController {
         //*Esta es la forma al utilizar los casos de usos:
         new DeleteTodo(this.todoRepository)
             .execute(id)
-            .then(todo => res.json(todo))
-            .catch(error => res.status(400).json({error}))
+            .then(todo => {return res.json(todo)})
+            //se cambio por el handleError:
+            // .catch(error => {return res.status(400).json({error})})
+            .catch(error => this.handleError(res, error));
     }
 
 
